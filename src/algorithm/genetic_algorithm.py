@@ -1,7 +1,4 @@
-import implementation.selection.selection_functions as selection
-import implementation.mating.mating_functions as mating
 from helpers.math import lin_map
-import decorators as deco
 import random
 
 
@@ -29,7 +26,8 @@ class GeneticAlgorithm:
         mutate_kwarg = {} if mutate_kwarg is None else mutate_kwarg
 
         result = self._evaluate(cost_function, self.population, **cost_kwarg)
-        for _ in range(max_iterations):
+        for i in range(max_iterations):
+            print(i)
             breeders = select_func(result, **select_kwarg)  # Expects breeders to be sorted in descending order
             new_population = breed_func(breeders, self.pop_size, **breed_kwarg)
             new_population = mutate_func(new_population, self.mut_rate, self.value_range, **mutate_kwarg)
@@ -66,49 +64,3 @@ class GeneticAlgorithm:
                 for _ in range(self.pop_size)
             ]
         return population
-
-
-def mut_func(population, mutation_rate, value_range):
-    mutate_percentage = mutation_rate * 100
-    for individual in range(len(population)):
-        for gene in range(len(population[individual])):
-            mutate = random.randint(1, 100) < mutate_percentage
-            if mutate:
-                population[individual][gene] = lin_map(random.random(), 0, 1, value_range[0], value_range[1])
-    return population
-
-
-def cost_func(a, b, c):
-    a0 = -1
-    b0 = 4
-    c0 = -3
-    x = [i/100 for i in range(1000)]
-    y0 = [a0*pow(i, 2) + b0*i + c0 for i in x]
-    y = [a*pow(i, 2) + b*i + c for i in x]
-    cost = sum([abs(target - real) for real, target in zip(y, y0)])
-    return cost
-
-
-@deco.dir_active(__file__)
-def main():
-    algorithm = GeneticAlgorithm(
-        100,
-        3,
-        0.2,
-        binary=False,
-        cost_star_arg=True,
-        value_range=[-5, 5]
-    )
-    result = algorithm.run(
-        100,
-        cost_func,
-        selection.tournament,
-        mating.sp_crossover,
-        mut_func,
-        select_kwarg={'rounds': 1}
-    )
-    print(result)
-
-
-if __name__ == '__main__':
-    main()
