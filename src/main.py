@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import implementation as impl
 from algorithm.genetic_algorithm import GeneticAlgorithm
 
-a0 = [-10, 15, 23, 10, -50]
+a0 = [-5, 15, 23]
 x_scale = 1
 
 
@@ -29,14 +29,14 @@ def cost_func(a):
         y = 0
         for j in range(len(a)):
             y += a[j] * pow(x, order - j)
-        cost += abs(ys[i] - y)
+        cost += pow(abs(ys[i] - y), 2)
     return cost
 
 
 def main():
     global a0
     algorithm = GeneticAlgorithm(
-        100,
+        500,
         len(a0),
         0.5,
         cost_star_arg=False,
@@ -49,7 +49,7 @@ def main():
         impl.mating.sp_crossover,
         impl.mutation.random_mutation,
         select_kwarg={'rounds': 2},
-        ensure_elitism=True
+        ensure_elitism=False
     )
 
     xs, ys = generate_target()
@@ -58,7 +58,7 @@ def main():
     plt.figure()
     plt.plot(xs, ys)
 
-    for i in range(1):
+    for i in range(5):
         solution = result[i][0]
         order = len(solution) - 1
         s = []
