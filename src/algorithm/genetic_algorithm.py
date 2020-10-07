@@ -1,4 +1,5 @@
 from helpers.math import lin_map
+from helpers.timing import Timer
 import random
 import math
 import threading
@@ -32,27 +33,36 @@ class GeneticAlgorithm:
 
     def run(self, max_iterations, cost_function, select_func, breed_func, mutate_func,
             cost_kwarg=None, select_kwarg=None, breed_kwarg=None, mutate_kwarg=None,
-            ensure_elitism=False):
+            ensure_elitism=False, enable_timer=False):
 
+        timer = Timer()
         cost_kwarg = {} if cost_kwarg is None else cost_kwarg
         select_kwarg = {} if select_kwarg is None else select_kwarg
         breed_kwarg = {} if breed_kwarg is None else breed_kwarg
         mutate_kwarg = {} if mutate_kwarg is None else mutate_kwarg
 
         result = self._evaluate(cost_function, cost_kwarg)
-
+        timer.time('Initial', enable_timer)
         for i in range(max_iterations):
             print(i)
             breeders = select_func(result, **select_kwarg)  # Expects breeders to be sorted in descending order
+            timer.time('Select  ', enable_timer)
+
             new_population = breed_func(breeders, self.pop_size, **breed_kwarg)
+            timer.time('Breed   ', enable_timer)
+
             new_population = mutate_func(new_population, self.mut_rate, self.value_range, **mutate_kwarg)
+            timer.time('Mutate  ', enable_timer)
             if ensure_elitism:
                 new_population.pop(random.randint(0, len(new_population) - 1))
                 new_population.append(breeders[0][0])
             if self.binary:
                 new_population = self._make_binary(new_population)
             self.population = new_population
+            timer.time('Other   ', enable_timer)
+
             result = self._evaluate(cost_function, cost_kwarg)
+            timer.time('Evaluate', enable_timer)
         result.sort(key=lambda k: k[1])
         return result
 

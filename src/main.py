@@ -23,6 +23,7 @@ def generate_target():
 
 
 def cost_func(a):
+    time.sleep(0.01)
     xs, ys = generate_target()
     order = len(a) - 1
     cost = 0
@@ -38,21 +39,22 @@ def cost_func(a):
 def main():
     global a0
     algorithm = GeneticAlgorithm(
-        1000,
+        500,
         len(a0),
         0.5,
         cost_star_arg=False,
         value_range=[-500, 500],
-        num_threads=8
+        num_threads=2
     )
     result = algorithm.run(
-        20,
+        10,
         cost_func,
         impl.selection.tournament,
         impl.mating.sp_crossover,
         impl.mutation.random_mutation,
         select_kwarg={'rounds': 2},
-        ensure_elitism=True
+        ensure_elitism=True,
+        enable_timer=True
     )
 
     xs, ys = generate_target()
@@ -88,4 +90,4 @@ if __name__ == '__main__':
     s = time.time()
     main()
     e = time.time()
-    print(f'Duration: {e-s}')
+    print(f'\n\nDuration: {e-s}')
