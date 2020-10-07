@@ -1,10 +1,13 @@
 from helpers.math import lin_map
 import random
+import math
+import threading
 
 
 class GeneticAlgorithm:
 
-    def __init__(self, pop_size, num_genes, mut_rate, cost_star_arg=False, binary=False, value_range=None):
+    def __init__(self, pop_size, num_genes, mut_rate, cost_star_arg=False, binary=False, value_range=None,
+                 num_threads=None):
         """
         Construct genetic algorithm population parameters
         :param pop_size: The population size
@@ -14,7 +17,9 @@ class GeneticAlgorithm:
                               to the cost function as *args or a list
         :param binary: specify if variables should be binary values. Default false
         :param value_range: specify range of values to be used. Default [0, 1]
+        :param num_threads: default None, specify if multi-threading is enabled and how many threads to execute
         """
+        self.num_threads = num_threads
         self.cost_star_arg = cost_star_arg
         self.mut_rate = mut_rate
         self.num_genes = num_genes
@@ -34,7 +39,8 @@ class GeneticAlgorithm:
         breed_kwarg = {} if breed_kwarg is None else breed_kwarg
         mutate_kwarg = {} if mutate_kwarg is None else mutate_kwarg
 
-        result = self._evaluate(cost_function, self.population, **cost_kwarg)
+        result = self._evaluate(cost_function, cost_kwarg)
+
         for i in range(max_iterations):
             print(i)
             breeders = select_func(result, **select_kwarg)  # Expects breeders to be sorted in descending order
@@ -46,11 +52,20 @@ class GeneticAlgorithm:
             if self.binary:
                 new_population = self._make_binary(new_population)
             self.population = new_population
-            result = self._evaluate(cost_function, self.population, **cost_kwarg)
+            result = self._evaluate(cost_function, cost_kwarg)
         result.sort(key=lambda k: k[1])
         return result
 
-    def _evaluate(self, cost_function, population, **kwargs):
+    def _evaluate(self, cost_function, cost_kwarg):
+        if self.num_threads is None:
+            result = self._evaluate_core(cost_function, self.population, **cost_kwarg)
+        else:
+            result, threads = self._thread_evaluate(cost_function, **cost_kwarg)
+            for thread in threads:
+                thread.join()
+        return result
+
+    def _evaluate_core(self, cost_function, population, **kwargs):
         costs = []
         for individual in population:
             if self.cost_star_arg:
@@ -60,12 +75,34 @@ class GeneticAlgorithm:
             costs.append(cost)
         return list(zip(population, costs))
 
+    def _thread_evaluate(self, cost_function, **kwargs):
+        result = [0] * self.pop_size
+        threads = []
+        indexes = [0]
+        ind = 0
+        for i in range(self.num_threads):
+            ind += math.ceil((self.pop_size - ind) / (self.num_threads - i))
+            indexes.append(ind)
+            thread = threading.Thread(
+                target=self._thread_target,
+                args=[result, (indexes[i], indexes[i + 1]), cost_function],
+                kwargs=kwargs
+            )
+            threads.append(thread)
+            thread.start()
+
+        return result, threads
+
+    def _thread_target(self, result, indexes, cost_function, **kwargs):
+        result[indexes[0]: indexes[1]] = self._evaluate_core(
+            cost_function, self.population[indexes[0]: indexes[1]], **kwargs
+        )
+
     def _make_binary(self, population):
         for individual in range(len(population)):
             for gene in range(len(population[individual])):
                 population[individual][gene] = int(population[individual][gene] >= 0.5)
         return population
-
 
     def _generate_initial(self):
 

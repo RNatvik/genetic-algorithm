@@ -1,8 +1,10 @@
+import time
+
 import matplotlib.pyplot as plt
 import implementation as impl
 from algorithm.genetic_algorithm import GeneticAlgorithm
 
-a0 = [-5, 15, 23]
+a0 = [5, 15, 23]
 x_scale = 1
 
 
@@ -36,20 +38,21 @@ def cost_func(a):
 def main():
     global a0
     algorithm = GeneticAlgorithm(
-        500,
+        1000,
         len(a0),
         0.5,
         cost_star_arg=False,
-        value_range=[-500, 500]
+        value_range=[-500, 500],
+        num_threads=8
     )
     result = algorithm.run(
-        1000,
+        20,
         cost_func,
         impl.selection.tournament,
         impl.mating.sp_crossover,
         impl.mutation.random_mutation,
         select_kwarg={'rounds': 2},
-        ensure_elitism=False
+        ensure_elitism=True
     )
 
     xs, ys = generate_target()
@@ -82,4 +85,7 @@ def main():
 
 
 if __name__ == '__main__':
+    s = time.time()
     main()
+    e = time.time()
+    print(f'Duration: {e-s}')
